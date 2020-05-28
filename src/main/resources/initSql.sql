@@ -3405,35 +3405,21 @@ INSERT INTO `ec_order_payment` VALUES (1263366735165231105, 1263366735123288065,
 -- Table structure for pay_biz_content
 -- ----------------------------
 DROP TABLE IF EXISTS `pay_biz_content`;
-CREATE TABLE `pay_biz_content`  (
-  `out_trade_no` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '商户订单号',
-  `seller_id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '卖家支付宝用户ID',
-  `total_amount` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '订单总金额，单位为元，精确到小数点后两位，取值范围[0.01,100000000] 如果同时传入了【打折金额】，【不可打折金额】，【订单总金额】三者，则必须满足如下条件：【订单总金额】=【打折金额】+【不可打折金额】',
-  `discountable_amount` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '可打折金额. 参与优惠计算的金额，单位为元，精确到小数点后两位，取值范围[0.01,100000000] 如果该值未传入，但传入了【订单总金额】和【不可打折金额】，则该值默认为【订单总金额】-【不可打折金额】',
-  `un_discountable_amount` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '不可打折金额',
-  `subject` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '订单标题',
-  `body` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '对交易或商品的描述',
-  `operator_id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '商户操作员编号',
-  `store_id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '商户门店编号',
-  `ali_pay_store_id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '支付宝商家平台中配置的商户门店号，详询支付宝技术支持',
-  `terminal_id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '商户机具终端编号',
-  `timeout_express` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '该笔订单允许的最晚付款时间，逾期将关闭交易。取值范围：1m～15d。m-分钟，h-小时，d-天，1c-当天（1c-当天的情况下，无论交易何时创建，都在0点关闭）。 该参数数值不接受小数点， 如 1.5h，可转换为 90m。',
-  PRIMARY KEY (`out_trade_no`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of pay_biz_content
--- ----------------------------
-INSERT INTO `pay_biz_content` VALUES ('1590550941544', '374.0', '374.0', '374.0', '对应订单id:[1263365169725149186]', '3v74', '374.0', '374.0', '374.0', '374.0', '374.0', '374.0');
-INSERT INTO `pay_biz_content` VALUES ('1590551595483', NULL, '374.0', NULL, NULL, '随机金额374.0x', '对应订单id:[1263365169725149186]', '123', '1590551595483', NULL, '1590551595483', '2m');
-INSERT INTO `pay_biz_content` VALUES ('159055220941544', '374.0', '374.0', '374.0', '对应订单id:[1263365169725149186]', '3v74', '374.0', '374.0', '374.0', '374.0', '374.0', '374.0');
-INSERT INTO `pay_biz_content` VALUES ('1590561466353', NULL, '374.0', NULL, NULL, '随机金额374.0', '[1263365169725149186]', '123', '1590561466353', NULL, '1590561466353', '2m');
-INSERT INTO `pay_biz_content` VALUES ('1590565076964', NULL, '374.0', NULL, NULL, '随机金额374.0', '[1263365169725149186]', '124', '1590565076964', NULL, '1590565076964', '2m');
-INSERT INTO `pay_biz_content` VALUES ('1590565356345', NULL, '374.0', NULL, NULL, '随机金额374.0', '1263365169725149186,', '124', '1590565356345', NULL, '1590565356345', '2m');
-INSERT INTO `pay_biz_content` VALUES ('1590565447369', NULL, '374.0', NULL, NULL, '随机金额374.0', '1263365169725149186,', '124', '1590565447369', NULL, '1590565447369', '2m');
-INSERT INTO `pay_biz_content` VALUES ('1590565726911', NULL, '374.0', NULL, NULL, '随机金额374.0', '1263365169725149186,', '124', '1590565726911', NULL, '1590565726911', '2m');
-INSERT INTO `pay_biz_content` VALUES ('1590572115286', NULL, '374.0', NULL, NULL, '随机金额374.0', '1263365169725149186,', '123', '1590572115286', NULL, '1590572115286', '2m');
-INSERT INTO `pay_biz_content` VALUES ('1590572397712', NULL, '374.0', NULL, NULL, '随机金额374.0', '1263365169725149186,', '123', '1590572397712', NULL, '1590572397712', '2m');
-INSERT INTO `pay_biz_content` VALUES ('1590573353932', NULL, '374.0', NULL, NULL, '随机金额374.0', '1263365169725149186,', '123', '1590573353932', NULL, '1590573353932', '2m');
+CREATE TABLE `pay_biz_content` (
+  `out_trade_no` varchar(255) NOT NULL COMMENT '商户订单号',
+  `seller_id` varchar(255) DEFAULT NULL COMMENT '卖家支付宝用户ID',
+  `total_amount` varchar(255) DEFAULT NULL COMMENT '订单总金额，单位为元，精确到小数点后两位，取值范围[0.01,100000000] 如果同时传入了【打折金额】，【不可打折金额】，【订单总金额】三者，则必须满足如下条件：【订单总金额】=【打折金额】+【不可打折金额】',
+  `discountable_amount` varchar(255) DEFAULT NULL COMMENT '可打折金额. 参与优惠计算的金额，单位为元，精确到小数点后两位，取值范围[0.01,100000000] 如果该值未传入，但传入了【订单总金额】和【不可打折金额】，则该值默认为【订单总金额】-【不可打折金额】',
+  `un_discountable_amount` varchar(255) DEFAULT NULL COMMENT '不可打折金额',
+  `subject` varchar(255) DEFAULT NULL COMMENT '订单标题',
+  `body` varchar(255) DEFAULT NULL COMMENT '对交易或商品的描述',
+  `operator_id` varchar(255) DEFAULT NULL COMMENT '商户操作员编号',
+  `store_id` varchar(255) DEFAULT NULL COMMENT '商户门店编号',
+  `ali_pay_store_id` varchar(255) DEFAULT NULL COMMENT '支付宝商家平台中配置的商户门店号，详询支付宝技术支持',
+  `terminal_id` varchar(255) DEFAULT NULL COMMENT '商户机具终端编号',
+  `timeout_express` varchar(255) DEFAULT NULL COMMENT '该笔订单允许的最晚付款时间，逾期将关闭交易。取值范围：1m～15d。m-分钟，h-小时，d-天，1c-当天（1c-当天的情况下，无论交易何时创建，都在0点关闭）。 该参数数值不接受小数点， 如 1.5h，可转换为 90m。',
+  `trade_status` varchar(255) DEFAULT NULL COMMENT '	交易状态：WAIT_BUYER_PAY（交易创建，等待买家付款）、TRADE_CLOSED（未付款交易超时关闭，或支付完成后全额退款）、TRADE_SUCCESS（交易支付成功）、TRADE_FINISHED（交易结束，不可退款）',
+  PRIMARY KEY (`out_trade_no`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 SET FOREIGN_KEY_CHECKS = 1;

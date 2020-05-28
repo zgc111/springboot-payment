@@ -42,6 +42,10 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
     private String signType;
     @Value("${notify_url}")
     private String notifyUrl;
+    @Value("${format}")
+    private String format;
+    @Value("${charset}")
+    private String charset;
     @Autowired
     private EcOrderPaymentService ecOrderPaymentService;
     @Autowired
@@ -49,8 +53,8 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
 
     public AlipayClient getAlipayClient() {
         return new DefaultAlipayClient
-            (serverUrl, appId, privateKey, "json",
-                "utf-8", aliPayPublicKey, "RSA2");
+            (serverUrl, appId, privateKey, format,
+                charset, aliPayPublicKey, signType);
     }
 
     @Override

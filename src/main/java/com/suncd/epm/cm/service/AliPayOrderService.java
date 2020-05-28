@@ -1,8 +1,10 @@
 package com.suncd.epm.cm.service;
 
+import com.alipay.api.response.AlipayDataBillSellQueryResponse;
 import com.alipay.api.response.AlipayTradePrecreateResponse;
 import com.alipay.api.response.AlipayTradeQueryResponse;
 import com.suncd.epm.cm.domain.EcOrderPayQrCode;
+import com.suncd.epm.cm.domain.TradeBillSellQuery;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -52,10 +54,25 @@ public interface AliPayOrderService {
     AlipayTradeQueryResponse getTradesByOutTradeNo(String outTradeNo);
 
     /**
+     * 支付宝商家账户卖出交易查询
+     *
+     * @param tradesBillSellQuery
+     * @return
+     */
+    AlipayDataBillSellQueryResponse tradesBillSellQuery(TradeBillSellQuery tradesBillSellQuery);
+
+    /**
      * 交易回调
      *
      * @param request
      * @return
      */
     void paymentAliCallBack(HttpServletRequest request);
+
+    /**
+     * 下载对账单
+     *
+     * @param billDate
+     */
+    String tradesBillDownload(String billDate);
 }

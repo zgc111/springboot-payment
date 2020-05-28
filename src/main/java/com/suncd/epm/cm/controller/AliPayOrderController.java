@@ -1,8 +1,10 @@
 package com.suncd.epm.cm.controller;
 
+import com.alipay.api.response.AlipayDataBillSellQueryResponse;
 import com.alipay.api.response.AlipayTradePrecreateResponse;
 import com.alipay.api.response.AlipayTradeQueryResponse;
 import com.suncd.epm.cm.domain.EcOrderPayQrCode;
+import com.suncd.epm.cm.domain.TradeBillSellQuery;
 import com.suncd.epm.cm.service.AliPayOrderService;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,6 +98,27 @@ public class AliPayOrderController {
     @GetMapping("/trades/trade-no")
     public AlipayTradeQueryResponse getTradesByOutTradeNo(@RequestParam("outTradeNo") String outTradeNo) {
         return aliPayOrderService.getTradesByOutTradeNo(outTradeNo);
+    }
+
+    /**
+     * 支付宝商家账户卖出交易查询(支付宝侧还未开放财务API)
+     * @param tradeBillSellQuery
+     * @return
+     */
+    @GetMapping("/trades/bill-sell-query")
+    public AlipayDataBillSellQueryResponse tradesBillSellQuery(TradeBillSellQuery tradeBillSellQuery) {
+        return aliPayOrderService.tradesBillSellQuery(tradeBillSellQuery);
+    }
+
+    /**
+     * 交易账单下载(有问题,每次下载下来的文件都是一样........)
+     *
+     * @param billDate
+     * @return
+     */
+    @GetMapping("/trades/bill-download")
+    public String getTradesBillDownload(@RequestParam("billDate") String billDate) {
+        return aliPayOrderService.tradesBillDownload(billDate);
     }
 
     /**

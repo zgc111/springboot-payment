@@ -5,18 +5,13 @@ import com.alipay.api.AlipayClient;
 import com.alipay.api.AlipayResponse;
 import com.alipay.api.DefaultAlipayClient;
 import com.alipay.api.internal.util.AlipaySignature;
-import com.alipay.api.request.AlipayTradeCancelRequest;
-import com.alipay.api.request.AlipayTradePrecreateRequest;
-import com.alipay.api.request.AlipayTradeQueryRequest;
-import com.alipay.api.request.AlipayTradeRefundRequest;
-import com.alipay.api.response.AlipayTradeCancelResponse;
-import com.alipay.api.response.AlipayTradePrecreateResponse;
-import com.alipay.api.response.AlipayTradeQueryResponse;
-import com.alipay.api.response.AlipayTradeRefundResponse;
+import com.alipay.api.request.*;
+import com.alipay.api.response.*;
 import com.google.gson.Gson;
 import com.suncd.epm.cm.domain.EcOrderPayQrCode;
 import com.suncd.epm.cm.domain.EcOrderPayment;
 import com.suncd.epm.cm.domain.PayBizContent;
+import com.suncd.epm.cm.domain.TradeBillSellQuery;
 import com.suncd.epm.cm.utils.ZxingUtils;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
@@ -227,6 +222,30 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
     }
 
     @Override
+    public AlipayDataBillSellQueryResponse tradesBillSellQuery(TradeBillSellQuery tradesBillSellQuery) {
+        AlipayDataBillSellQueryRequest request = new AlipayDataBillSellQueryRequest();
+        String bizContent = new Gson().toJson(tradesBillSellQuery);
+        log.debug("参数:{}", bizContent);
+        request.setBizContent(bizContent);
+        System.out.println(new Gson().toJson(request));
+        try {
+            AlipayDataBillAccountlogQueryRequest request1 = new AlipayDataBillAccountlogQueryRequest();
+            request.setBizContent(bizContent);
+            AlipayDataBillAccountlogQueryResponse response1 = getAlipayClient().execute(request1);
+            AlipayDataBillSellQueryResponse response = getAlipayClient().execute(request);
+            if (response.isSuccess()) {
+                System.out.println("调用成功");
+                return response;
+            } else {
+                System.out.println("调用失败");
+                return response;
+            }
+        } catch (AlipayApiException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    @Override
     public AlipayTradeQueryResponse getTradesByOutTradeNo(String outTradeNo) {
         AlipayTradeQueryRequest request = new AlipayTradeQueryRequest();
         request.setBizContent("{" +
@@ -243,6 +262,28 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
         } catch (AlipayApiException e) {
             log.error("不支持的交易状态，交易返回异常!!!,原因:{}", e.getMessage());
             return null;
+        }
+    }
+
+    @Override
+    public String tradesBillDownload(String billDate) {
+        AlipayDataDataserviceBillDownloadurlQueryRequest request = new AlipayDataDataserviceBillDownloadurlQueryRequest();
+        request.setBizContent("{" +
+            "\"bill_type\":\"trade\"," +
+            "\"bill_date\":\"" + billDate + "\"" +
+            "  }");
+        try {
+            AlipayDataDataserviceBillDownloadurlQueryResponse response = getAlipayClient().execute(request);
+            if (response.isSuccess()) {
+                System.out.println("调用成功");
+                System.out.println(response.getBillDownloadUrl());
+                return response.getBillDownloadUrl();
+            } else {
+                System.out.println("调用失败");
+                return response.getSubMsg();
+            }
+        } catch (AlipayApiException e) {
+            return e.getErrMsg();
         }
     }
 

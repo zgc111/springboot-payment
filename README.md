@@ -28,6 +28,7 @@ alipay_public_key=
 sign_type=RSA2
 
 #回调地址(需要映射到公网才能回调成功)
+
 notify_url=http://xxxx/trades/payment/ali-call-back
 
 format=json
@@ -35,6 +36,7 @@ format=json
 charset=utf-8
 
 #最后付款时间,创建后开始倒计时
+
 timeout_express=5m
 
 3.下载沙箱环境的支付宝app
@@ -42,9 +44,9 @@ timeout_express=5m
 4.使用沙箱账号登录测试
 ![image](https://github.com/a736875071/spring-boot-payment/blob/master/src/main/resources/img/%E6%B2%99%E6%BC%8F%E7%8E%AF%E5%A2%83%E8%B4%A6%E5%8F%B7.jpg)
 
-注意:
-    1.生成的付款二维码,如果没有扫描,通过
-    https://opendocs.alipay.com/apis/api_1/alipay.trade.query
-    是查询不到订单的
+#注意:
+1.生成的付款二维码,如果没有扫描,通过
+https://opendocs.alipay.com/apis/api_1/alipay.trade.query
+是查询不到订单的
     
 

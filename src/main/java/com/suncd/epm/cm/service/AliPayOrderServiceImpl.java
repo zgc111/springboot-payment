@@ -4,12 +4,15 @@ import com.alipay.api.AlipayApiException;
 import com.alipay.api.AlipayClient;
 import com.alipay.api.AlipayResponse;
 import com.alipay.api.DefaultAlipayClient;
+import com.alipay.api.internal.util.AlipaySignature;
 import com.alipay.api.request.AlipayTradeCancelRequest;
 import com.alipay.api.request.AlipayTradePrecreateRequest;
 import com.alipay.api.request.AlipayTradeQueryRequest;
+import com.alipay.api.request.AlipayTradeRefundRequest;
 import com.alipay.api.response.AlipayTradeCancelResponse;
 import com.alipay.api.response.AlipayTradePrecreateResponse;
 import com.alipay.api.response.AlipayTradeQueryResponse;
+import com.alipay.api.response.AlipayTradeRefundResponse;
 import com.google.gson.Gson;
 import com.suncd.epm.cm.domain.EcOrderPayQrCode;
 import com.suncd.epm.cm.domain.EcOrderPayment;
@@ -22,10 +25,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletRequest;
+import java.util.*;
 
 /**
  * @author YangQ
@@ -41,7 +42,7 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
     @Value("${private_key}")
     private String privateKey;
     @Value("${alipay_public_key}")
-    private String alipayPublicKey;
+    private String aliPayPublicKey;
     @Value("${sign_type}")
     private String signType;
     @Value("${notify_url}")
@@ -54,15 +55,15 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
     public AlipayClient getAlipayClient() {
         return new DefaultAlipayClient
             (serverUrl, appId, privateKey, "json",
-                "utf-8", alipayPublicKey, "RSA2");
+                "utf-8", aliPayPublicKey, "RSA2");
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public AlipayTradePrecreateResponse createOrderPayQrCode(EcOrderPayQrCode ecOrderPayQrCode) {
         //查询订单
-        List<EcOrderPayment> ecOrderPayments = ecOrderPaymentService.queryAllByLimit(ecOrderPayQrCode.getOrderIds());
-        if (ecOrderPayQrCode.getOrderIds().size() != ecOrderPayments.size()) {
+        List<EcOrderPayment> ecOrderPayments = ecOrderPaymentService.queryAllByLimit(Collections.singletonList(ecOrderPayQrCode.getOrderId()));
+        if (ecOrderPayments.size() != 1) {
             log.error("订单支付信息异常");
             return null;
         }
@@ -83,10 +84,10 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
 
         payBizContent.setOutTradeNo(outTradeNo);
         payBizContent.setStoreId("NJ_001");
-        payBizContent.setSubject("随机金额" + money);
+        payBizContent.setSubject("订单金额" + money);
         payBizContent.setTimeoutExpress("2m");
         payBizContent.setTotalAmount(money);
-        String orderIds = ecOrderPayQrCode.getOrderIds().stream().map(order -> order + ",").collect(Collectors.joining());
+        String orderIds = String.valueOf(ecOrderPayQrCode.getOrderId());
         payBizContent.setBody(orderIds);
         payBizContent.setStoreId(outTradeNo);
 //        payBizContent.setAliPayStoreId(outTradeNo);
@@ -98,6 +99,7 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
         //订单允许的最晚付款时间
         request.setBizContent(toString);
         System.out.println(request.getBizContent());
+        System.out.println(request.getNotifyUrl());
         try {
             AlipayTradePrecreateResponse response = alipayClient.execute(request);
             System.out.println(response.getCode());
@@ -147,10 +149,7 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
         //删除本地支付信息
         payBizContentService.deleteById(outTradeNo);
         //修改对应订单支付信息
-        List<Long> orderIds = Arrays.stream(payBizContent.getSubject().split(","))
-            .map(Long::valueOf)
-            .collect(Collectors.toList());
-        List<EcOrderPayment> ecOrderPayments = ecOrderPaymentService.queryAllByLimit(orderIds);
+        List<EcOrderPayment> ecOrderPayments = ecOrderPaymentService.queryAllByLimit(Collections.singletonList(Long.valueOf(payBizContent.getBody())));
         for (EcOrderPayment payment : ecOrderPayments) {
             payment.setPaymentStatus(1);
             ecOrderPaymentService.update(payment);
@@ -178,6 +177,56 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String tradeRefundByOutTradeNo(String outTradeNo) {
+        //查询支付宝侧订单记录是否存在
+        AlipayTradeQueryResponse queryResponse = getTradesByOutTradeNo(outTradeNo);
+        //判断交易状态
+        if (queryResponse == null) {
+            return "没有此订单";
+        }
+        if (!"10000".equals(queryResponse.getCode())) {
+            return queryResponse.getSubMsg();
+        }
+        if (!queryResponse.getTradeStatus().equals("TRADE_SUCCESS")) {
+            return "此订单不可退款";
+        }
+        //查询本地交易支付记录
+        PayBizContent payBizContent = payBizContentService.queryById(outTradeNo);
+        if (Objects.isNull(payBizContent)) {
+            return "此支付单对应系统支付订单异常";
+        }
+        Long orderId = Long.valueOf(payBizContent.getBody());
+        List<EcOrderPayment> ecOrderPayments = ecOrderPaymentService.queryAllByLimit(Collections.singletonList(orderId));
+        if (ecOrderPayments.isEmpty()) {
+            return "此支付单对应系统订单异常";
+        }
+        EcOrderPayment ecOrderPayment = ecOrderPayments.get(0);
+        //本地退款
+        ecOrderPayment.setPaymentStatus("1");
+        ecOrderPaymentService.update(ecOrderPayment);
+        payBizContent.setTradeStatus("TRADE_CLOSED");
+        payBizContentService.update(payBizContent);
+        //支付宝侧退款
+        AlipayTradeRefundRequest request = new AlipayTradeRefundRequest();
+        PayBizContent returnPayBizContent = new PayBizContent();
+        returnPayBizContent.setOutTradeNo(outTradeNo);
+        returnPayBizContent.setRefundAmount(queryResponse.getTotalAmount());
+        request.setBizContent(new Gson().toJson(returnPayBizContent));
+        try {
+            AlipayTradeRefundResponse refundResponse = getAlipayClient().execute(request);
+            if ("10000".equals(refundResponse.getCode())) {
+                return "退款成功";
+            } else {
+                log.error("不支持的交易状态，交易返回异常!!!");
+                throw new RuntimeException(refundResponse.getSubMsg());
+            }
+        } catch (AlipayApiException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    @Override
     public AlipayTradeQueryResponse getTradesByOutTradeNo(String outTradeNo) {
         AlipayTradeQueryRequest request = new AlipayTradeQueryRequest();
         request.setBizContent("{" +
@@ -195,5 +244,70 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
             log.error("不支持的交易状态，交易返回异常!!!,原因:{}", e.getMessage());
             return null;
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void paymentAliCallBack(HttpServletRequest request) {
+        Map<String, String[]> parmMap = request.getParameterMap();
+        Map<String, String> paMap = getParm(parmMap);
+        boolean v = verifyAliAsyncCallBackParams(paMap);
+        System.out.println(v);
+        if (!v) {
+            log.error("支付宝支付回调发现异常回调,请立即排查!!!");
+            return;
+        }
+        String tradeStatus = paMap.get("trade_status");
+        if (tradeStatus.equals("WAIT_BUYER_PAY")) {
+            log.debug("交易待支付业务");
+        } else if (tradeStatus.equals("TRADE_CLOSED")) {
+            log.debug("交易关闭业务");
+        } else if (tradeStatus.equals("TRADE_SUCCESS")) {
+            log.debug("交易成功业务");
+            String outTradeNo = paMap.get("out_trade_no");
+            //查询本地交易支付记录
+            PayBizContent payBizContent = payBizContentService.queryById(outTradeNo);
+            if (Objects.isNull(payBizContent)) {
+                log.error("此支付单对应系统支付订单异常");
+                return;
+            }
+            Long orderId = Long.valueOf(payBizContent.getBody());
+            List<EcOrderPayment> ecOrderPayments = ecOrderPaymentService.queryAllByLimit(Collections.singletonList(orderId));
+            if (ecOrderPayments.isEmpty()) {
+                log.error("此支付单对应系统订单异常");
+                return;
+            }
+            EcOrderPayment ecOrderPayment = ecOrderPayments.get(0);
+            ecOrderPayment.setPaymentStatus("2");
+            ecOrderPaymentService.update(ecOrderPayment);
+            payBizContent.setTradeStatus(tradeStatus);
+            payBizContentService.update(payBizContent);
+
+        } else if (tradeStatus.equals("TRADE_FINISHED")) {
+            log.debug("交易完成业务");
+        } else {
+            log.debug("不知名状态");
+        }
+    }
+
+    private Boolean verifyAliAsyncCallBackParams(Map<String, String> map) {
+        String sign = map.get("sign");
+        map.remove("sign_type");
+        String signContent = AlipaySignature.getSignCheckContentV2(map);
+        try {
+            return AlipaySignature.rsa256CheckContent(signContent, sign, aliPayPublicKey, "utf-8");
+        } catch (AlipayApiException e) {
+            log.debug(e.getMessage());
+            return false;
+        }
+    }
+
+    private Map<String, String> getParm(Map<String, String[]> parmMap) {
+        Map<String, String> map = new HashMap<>(24);
+        parmMap.keySet().forEach(key -> {
+            String[] value = parmMap.get(key);
+            map.put(key, value[0]);
+        });
+        return map;
     }
 }

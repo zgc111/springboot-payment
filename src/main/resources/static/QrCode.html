@@ -40,13 +40,14 @@
     });
 
     function creatQrCode() {
-        var val = new Array($("#text").val());
+        // var val = new Array($("#text").val());
+        var val = new $("#text").val();
         console.log(val);
         $.ajax({
             url: "http://localhost:8082/create-qr-code",
             dataType: "json",
             contentType: "application/json;charset=utf-8",
-            data: JSON.stringify({'orderIds': val, 'operatorId': 124}),
+            data: JSON.stringify({'orderId': val, 'operatorId': 124}),
             type: "POST",
             success: function (req) {
                 console.log(req.qrCode)

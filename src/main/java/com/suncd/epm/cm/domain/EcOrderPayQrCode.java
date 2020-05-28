@@ -10,6 +10,6 @@ import java.util.List;
  */
 @Data
 public class EcOrderPayQrCode {
-    private List<Long> orderIds;
+    private Long orderId;
     private Long operatorId;
 }

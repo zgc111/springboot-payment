@@ -17,11 +17,11 @@ public class EcOrderPayment implements Serializable {
     /**
      * 支付单号
      */
-    private Object id;
+    private Long id;
     /**
      * 订单id
      */
-    private Object orderId;
+    private Long orderId;
     /**
      * 账面应付
      */
@@ -49,11 +49,11 @@ public class EcOrderPayment implements Serializable {
     /**
      * 支付状态, 1：待支付 2：已支付待核销 3：已核销,4:支付中
      */
-    private Object paymentStatus;
+    private Integer paymentStatus;
     /**
      * 支付方式： 现金 微信 支付宝
      */
-    private Object paymentMethod;
+    private Integer paymentMethod;
     /**
      * 支付时间
      */
@@ -65,7 +65,7 @@ public class EcOrderPayment implements Serializable {
     /**
      * 收款方式
      */
-    private Object collectionMethod;
+    private Integer collectionMethod;
     /**
      * 财务核销日期
      */
@@ -85,7 +85,7 @@ public class EcOrderPayment implements Serializable {
     /**
      * 收款人转移状态 1:待确认,2:拒绝,3:同意
      */
-    private Object payeeTransferStatus;
+    private Integer payeeTransferStatus;
     /**
      * 发起收款人转移时间
      */

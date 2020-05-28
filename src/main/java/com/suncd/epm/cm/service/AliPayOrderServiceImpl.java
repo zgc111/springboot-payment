@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author YangQ
@@ -46,6 +47,8 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
     private String format;
     @Value("${charset}")
     private String charset;
+    @Value("${timeout_express}")
+    private String timeoutExpress;
     @Autowired
     private EcOrderPaymentService ecOrderPaymentService;
     @Autowired
@@ -61,18 +64,23 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
     @Transactional(rollbackFor = Exception.class)
     public AlipayTradePrecreateResponse createOrderPayQrCode(EcOrderPayQrCode ecOrderPayQrCode) {
         //查询订单
-        List<EcOrderPayment> ecOrderPayments = ecOrderPaymentService.queryAllByLimit(Collections.singletonList(ecOrderPayQrCode.getOrderId()));
+        List<EcOrderPayment> ecOrderPayments = ecOrderPaymentService
+            .queryAllByLimit(Collections.singletonList(ecOrderPayQrCode.getOrderId()))
+            .stream().filter(payment -> 0 == payment.getPaymentStatus()).collect(Collectors.toList());
         if (ecOrderPayments.size() != 1) {
             log.error("订单支付信息异常");
-            return null;
+            throw new RuntimeException("订单支付信息异常");
         }
+        EcOrderPayment ecOrderPayment = ecOrderPayments.get(0);
         //计算订单总支付金额
-        Double money = ecOrderPayments.stream().map(EcOrderPayment::getTotalActualPrice).reduce(Double::sum).orElse(0.00);
+        Double money = ecOrderPayment.getTotalActualPrice();
         //生成唯一支付id
         String outTradeNo = String.valueOf(System.currentTimeMillis());
         //组装支付请求
         AlipayTradePrecreateResponse response = createOrderPayQrCode(String.valueOf(money), outTradeNo, ecOrderPayQrCode);
         //修改对应订单支付状态
+        ecOrderPayment.setPaymentStatus(4);
+        ecOrderPaymentService.update(ecOrderPayment);
         return response;
     }
 
@@ -84,7 +92,7 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
         payBizContent.setOutTradeNo(outTradeNo);
         payBizContent.setStoreId("NJ_001");
         payBizContent.setSubject("订单金额" + money);
-        payBizContent.setTimeoutExpress("2m");
+        payBizContent.setTimeoutExpress(timeoutExpress);
         payBizContent.setTotalAmount(money);
         String orderIds = String.valueOf(ecOrderPayQrCode.getOrderId());
         payBizContent.setBody(orderIds);
@@ -113,6 +121,7 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
                 log.error("不支持的交易状态，交易返回异常!!!");
                 throw new RuntimeException("不支持的交易状态，交易返回异常!!!");
             }
+            payBizContent.setTradeStatus("WAIT_BUYER_PAY");
             payBizContentService.insert(payBizContent);
             return response;
         } catch (AlipayApiException e) {
@@ -202,7 +211,7 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
         }
         EcOrderPayment ecOrderPayment = ecOrderPayments.get(0);
         //本地退款
-        ecOrderPayment.setPaymentStatus("1");
+        ecOrderPayment.setPaymentStatus(1);
         ecOrderPaymentService.update(ecOrderPayment);
         payBizContent.setTradeStatus("TRADE_CLOSED");
         payBizContentService.update(payBizContent);
@@ -323,7 +332,7 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
                 return;
             }
             EcOrderPayment ecOrderPayment = ecOrderPayments.get(0);
-            ecOrderPayment.setPaymentStatus("2");
+            ecOrderPayment.setPaymentStatus(2);
             ecOrderPaymentService.update(ecOrderPayment);
             payBizContent.setTradeStatus(tradeStatus);
             payBizContentService.update(payBizContent);

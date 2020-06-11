@@ -305,9 +305,8 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
     public void paymentAliCallBack(HttpServletRequest request) {
         Map<String, String[]> parmMap = request.getParameterMap();
         Map<String, String> paMap = getParm(parmMap);
-        boolean v = verifyAliAsyncCallBackParams(paMap);
-        System.out.println(v);
-        if (!v) {
+        boolean verify = verifyAliAsyncCallBackParams(paMap);
+        if (!verify) {
             log.error("支付宝支付回调发现异常回调,请立即排查!!!");
             return;
         }

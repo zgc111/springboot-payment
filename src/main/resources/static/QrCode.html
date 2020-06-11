@@ -31,9 +31,11 @@
 
     makeCode();
 
-    $("#text").on("blur", function () {
-        makeCode();
-    }).on("keydown", function (e) {
+    $("#text")
+    //     .on("blur", function () {
+    //     makeCode();
+    // })
+        .on("keydown", function (e) {
         if (e.keyCode == 13) {
             creatQrCode();
         }

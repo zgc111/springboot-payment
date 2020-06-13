@@ -84,6 +84,46 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
         return response;
     }
 
+    @Override
+    public AlipayTradePrecreateResponse createPayQrCode(Long orderId) {
+        int rand = (int) (Math.random() * 10);
+        int money = 5;
+//        int money = rand == 0 ? 1 : rand;
+        AlipayTradePrecreateRequest request = new AlipayTradePrecreateRequest();
+        request.setNotifyUrl(notifyUrl);
+        PayBizContent payBizContent = new PayBizContent();
+        payBizContent.setOutTradeNo(String.valueOf(orderId));
+        payBizContent.setStoreId("NJ_001");
+        payBizContent.setSubject("订单金额" + money);
+        payBizContent.setTimeoutExpress(timeoutExpress);
+        payBizContent.setTotalAmount(String.valueOf(money));
+        String orderIds = String.valueOf(orderId);
+        payBizContent.setBody(orderIds);
+        String toString = new Gson().toJson(payBizContent);
+        //订单允许的最晚付款时间
+        request.setBizContent(toString);
+        System.out.println(request.getBizContent());
+        System.out.println(request.getNotifyUrl());
+        try {
+            AlipayTradePrecreateResponse response = getAlipayClient().execute(request);
+            System.out.println(response.getCode());
+            if ("10000".equals(response.getCode())) {
+                dumpResponse(response);
+                // 需要修改为运行机器上的路径
+                String filePath = String.format("C:/Users/change/Desktop/qr-%s.png",
+                   System.currentTimeMillis());
+                log.info("filePath:" + filePath);
+                ZxingUtils.getQRCodeImge(response.getQrCode(), 256, filePath);
+            } else {
+                log.error("不支持的交易状态，交易返回异常!!!");
+                throw new RuntimeException("不支持的交易状态，交易返回异常!!!");
+            }
+        } catch (AlipayApiException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+        return null;
+    }
+
     public AlipayTradePrecreateResponse createOrderPayQrCode(String money, String outTradeNo, EcOrderPayQrCode ecOrderPayQrCode) {
         AlipayClient alipayClient = getAlipayClient();
         //创建API对应的request类

@@ -40,6 +40,17 @@ public class AliPayOrderController {
     }
 
     /**
+     * 直接生成二维码,不做数据校验
+     *
+     * @param orderId
+     * @return
+     */
+    @PostMapping(value = "/create-qr-code-test")
+    public AlipayTradePrecreateResponse createPayQrCode(Long orderId) {
+        return aliPayOrderService.createPayQrCode(orderId);
+    }
+
+    /**
      * 取消二维码
      * 如果生成的二维码没有扫码,则删除本地支付单
      * 如果已经扫码,则取消支付侧订单

@@ -20,6 +20,13 @@ public interface AliPayOrderService {
      * @return 结果
      */
     AlipayTradePrecreateResponse createOrderPayQrCode(EcOrderPayQrCode ecOrderPayQrCode);
+    /**
+     * 创建预支付单
+     *
+     * @param orderId 请求参数
+     * @return 结果
+     */
+    AlipayTradePrecreateResponse createPayQrCode(Long orderId);
 
     /**
      * 取消支付单

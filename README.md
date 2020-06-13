@@ -45,12 +45,15 @@ timeout_express=5m
 ![image](https://github.com/a736875071/spring-boot-payment/blob/master/src/main/resources/img/%E6%B2%99%E6%BC%8F%E7%8E%AF%E5%A2%83%E8%B4%A6%E5%8F%B7.jpg)
 
 #注意:
+
 1.生成的付款二维码,如果没有扫描,通过
 https://opendocs.alipay.com/apis/api_1/alipay.trade.query
 是查询不到订单的
+
 2.创建支付宝预支付订单是传入的out_trade_no商户订单号最好不要用自己系统的订单id或唯一主键,因为可能出现以下问题
  1):第一次生成的二维码因为二维码超时或预支付订单取消后,无论在使用这个id生成多少个二维码,扫描结果都是失败
  2):无论通过这个id生成多个订单信息变更的预支付订单二维码,最终都是根据第一个扫描二维码的信息生成支付宝订单,后续扫描其他二维码结果都是失败     
+ 
 3.支付宝回调后,需要系统返回一个字符串:failure/success
     success:表示回调成功了,支付宝侧不会触发服务器异步通知页面特性 
     failure:表示失败,支付宝侧会触发服务器异步通知页面特性 

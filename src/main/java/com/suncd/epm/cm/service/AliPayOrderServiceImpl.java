@@ -24,6 +24,8 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static java.lang.Math.random;
+
 /**
  * @author YangQ
  * @date 2020/5/27 13:54
@@ -43,6 +45,8 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
     private String signType;
     @Value("${notify_url}")
     private String notifyUrl;
+    @Value("${return_url}")
+    private String returnUrl;
     @Value("${format}")
     private String format;
     @Value("${charset}")
@@ -53,8 +57,9 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
     private EcOrderPaymentService ecOrderPaymentService;
     @Autowired
     private PayBizContentService payBizContentService;
+    private Gson gson = new Gson();
 
-    public AlipayClient getAlipayClient() {
+    public AlipayClient getAliPayClient() {
         return new DefaultAlipayClient
             (serverUrl, appId, privateKey, format,
                 charset, aliPayPublicKey, signType);
@@ -86,9 +91,9 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
 
     @Override
     public AlipayTradePrecreateResponse createPayQrCode(Long orderId) {
-        int rand = (int) (Math.random() * 10);
-        int money = 5;
-//        int money = rand == 0 ? 1 : rand;
+        int rand = (int) (random() * 10);
+//        int money = 5;
+        int money = rand == 0 ? 1 : rand;
         AlipayTradePrecreateRequest request = new AlipayTradePrecreateRequest();
         request.setNotifyUrl(notifyUrl);
         PayBizContent payBizContent = new PayBizContent();
@@ -99,19 +104,19 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
         payBizContent.setTotalAmount(String.valueOf(money));
         String orderIds = String.valueOf(orderId);
         payBizContent.setBody(orderIds);
-        String toString = new Gson().toJson(payBizContent);
+        String toString = gson.toJson(payBizContent);
         //订单允许的最晚付款时间
         request.setBizContent(toString);
         System.out.println(request.getBizContent());
         System.out.println(request.getNotifyUrl());
         try {
-            AlipayTradePrecreateResponse response = getAlipayClient().execute(request);
+            AlipayTradePrecreateResponse response = getAliPayClient().execute(request);
             System.out.println(response.getCode());
             if ("10000".equals(response.getCode())) {
                 dumpResponse(response);
                 // 需要修改为运行机器上的路径
                 String filePath = String.format("C:/Users/change/Desktop/qr-%s.png",
-                   System.currentTimeMillis());
+                    System.currentTimeMillis());
                 log.info("filePath:" + filePath);
                 ZxingUtils.getQRCodeImge(response.getQrCode(), 256, filePath);
             } else {
@@ -125,7 +130,7 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
     }
 
     public AlipayTradePrecreateResponse createOrderPayQrCode(String money, String outTradeNo, EcOrderPayQrCode ecOrderPayQrCode) {
-        AlipayClient alipayClient = getAlipayClient();
+        AlipayClient alipayClient = getAliPayClient();
         //创建API对应的request类
         PayBizContent payBizContent = new PayBizContent();
 
@@ -140,7 +145,7 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
 //        payBizContent.setAliPayStoreId(outTradeNo);
         payBizContent.setOperatorId(String.valueOf(ecOrderPayQrCode.getOperatorId()));
         payBizContent.setTerminalId(outTradeNo);
-        String toString = new Gson().toJson(payBizContent);
+        String toString = gson.toJson(payBizContent);
         AlipayTradePrecreateRequest request = new AlipayTradePrecreateRequest();
         request.setNotifyUrl(notifyUrl);
         //订单允许的最晚付款时间
@@ -211,7 +216,7 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
         request.setBizContent("{" +
             "    \"out_trade_no\":\"" + outTradeNo + "\" }");
         try {
-            AlipayTradeCancelResponse response = getAlipayClient().execute(request);
+            AlipayTradeCancelResponse response = getAliPayClient().execute(request);
             if ("10000".equals(response.getCode())) {
                 return Boolean.TRUE.toString();
             } else {
@@ -260,9 +265,9 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
         PayBizContent returnPayBizContent = new PayBizContent();
         returnPayBizContent.setOutTradeNo(outTradeNo);
         returnPayBizContent.setRefundAmount(queryResponse.getTotalAmount());
-        request.setBizContent(new Gson().toJson(returnPayBizContent));
+        request.setBizContent(gson.toJson(returnPayBizContent));
         try {
-            AlipayTradeRefundResponse refundResponse = getAlipayClient().execute(request);
+            AlipayTradeRefundResponse refundResponse = getAliPayClient().execute(request);
             if ("10000".equals(refundResponse.getCode())) {
                 return "退款成功";
             } else {
@@ -277,15 +282,15 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
     @Override
     public AlipayDataBillSellQueryResponse tradesBillSellQuery(TradeBillSellQuery tradesBillSellQuery) {
         AlipayDataBillSellQueryRequest request = new AlipayDataBillSellQueryRequest();
-        String bizContent = new Gson().toJson(tradesBillSellQuery);
+        String bizContent = gson.toJson(tradesBillSellQuery);
         log.debug("参数:{}", bizContent);
         request.setBizContent(bizContent);
-        System.out.println(new Gson().toJson(request));
+        System.out.println(gson.toJson(request));
         try {
             AlipayDataBillAccountlogQueryRequest request1 = new AlipayDataBillAccountlogQueryRequest();
             request.setBizContent(bizContent);
-            AlipayDataBillAccountlogQueryResponse response1 = getAlipayClient().execute(request1);
-            AlipayDataBillSellQueryResponse response = getAlipayClient().execute(request);
+            AlipayDataBillAccountlogQueryResponse response1 = getAliPayClient().execute(request1);
+            AlipayDataBillSellQueryResponse response = getAliPayClient().execute(request);
             if (response.isSuccess()) {
                 System.out.println("调用成功");
                 return response;
@@ -305,7 +310,7 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
             "    \"out_trade_no\":\"" + outTradeNo + "\" }");
         try {
             System.out.println(request.getBizContent());
-            AlipayTradeQueryResponse response = getAlipayClient().execute(request);
+            AlipayTradeQueryResponse response = getAliPayClient().execute(request);
             if ("10000".equals(response.getCode())) {
                 return response;
             } else {
@@ -326,7 +331,7 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
             "\"bill_date\":\"" + billDate + "\"" +
             "  }");
         try {
-            AlipayDataDataserviceBillDownloadurlQueryResponse response = getAlipayClient().execute(request);
+            AlipayDataDataserviceBillDownloadurlQueryResponse response = getAliPayClient().execute(request);
             if (response.isSuccess()) {
                 System.out.println("调用成功");
                 System.out.println(response.getBillDownloadUrl());
@@ -402,5 +407,35 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
             map.put(key, value[0]);
         });
         return map;
+    }
+
+    @Override
+    public String aliWapPay(String outTradeNo) {
+        AlipayClient alipayClient = getAliPayClient();
+        AlipayTradeWapPayRequest aliPayRequest = new AlipayTradeWapPayRequest();
+        //同步通知
+        aliPayRequest.setReturnUrl(returnUrl);
+        // 异步通知
+        aliPayRequest.setNotifyUrl(notifyUrl);
+        PayBizContent payBizContent = new PayBizContent();
+        payBizContent.setOutTradeNo(outTradeNo);
+        int rand = (int) (random() * 10);
+        int money = rand == 0 ? 1 : rand;
+        payBizContent.setTotalAmount(String.valueOf(money));
+        payBizContent.setSubject("手机支付");
+        aliPayRequest.setBizContent(gson.toJson(payBizContent));
+        // 调用SDK生成表单
+        String form = null;
+        try {
+            log.debug("手机支付请求参数:{}", gson.toJson(aliPayRequest));
+            AlipayTradeWapPayResponse response = alipayClient.pageExecute(aliPayRequest);
+            log.debug("创建支付订单结果:{}", gson.toJson(response));
+            form = response.getBody();
+            log.debug("外部商户创建订单并支付:{}", form);
+        } catch (AlipayApiException e) {
+            log.error("发生了异常:{}", e.getMessage());
+            e.printStackTrace();
+        }
+        return form;
     }
 }

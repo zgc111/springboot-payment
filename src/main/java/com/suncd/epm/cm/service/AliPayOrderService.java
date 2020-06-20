@@ -20,6 +20,7 @@ public interface AliPayOrderService {
      * @return 结果
      */
     AlipayTradePrecreateResponse createOrderPayQrCode(EcOrderPayQrCode ecOrderPayQrCode);
+
     /**
      * 创建预支付单
      *
@@ -80,6 +81,16 @@ public interface AliPayOrderService {
      * 下载对账单
      *
      * @param billDate
+     * @return
      */
     String tradesBillDownload(String billDate);
+
+
+    /**
+     * 手机支付
+     *
+     * @param outTradeNo
+     * @return
+     */
+    String aliWapPay(String outTradeNo);
 }

@@ -12,15 +12,19 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 
 /**
- * Created by liuyangkly on 15/6/27.
+ * <p>
  * 使用了google zxing作为二维码生成工具
+ * @author change
  */
 public class ZxingUtils {
-	private static Log log = LogFactory.getLog(ZxingUtils.class);
+    private static Log log = LogFactory.getLog(ZxingUtils.class);
 
     private static final int BLACK = 0xFF000000;
     private static final int WHITE = 0xFFFFFFFF;
@@ -44,30 +48,51 @@ public class ZxingUtils {
         }
     }
 
-    /** 将内容contents生成长宽均为width的图片，图片路径由imgPath指定
+    /**
+     * 将内容contents生成长宽均为width的图片，图片路径由imgPath指定
      */
-    public static File getQRCodeImge(String contents, int width, String imgPath) {
-        return getQRCodeImge(contents, width, width, imgPath);
+    public static File getQrCodeImage(String contents, int width, String imgPath) {
+        return getQrCodeImage(contents, width, width, imgPath);
     }
 
-    /** 将内容contents生成长为width，宽为width的图片，图片路径由imgPath指定
+    /**
+     * 将内容contents生成长为width，宽为width的图片，图片路径由imgPath指定
      */
-	public static File getQRCodeImge(String contents, int width, int height, String imgPath) {
-		try {
+    public static File getQrCodeImage(String contents, int width, int height, String imgPath) {
+        try {
             Map<EncodeHintType, Object> hints = new Hashtable<EncodeHintType, Object>();
             hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.M);
             hints.put(EncodeHintType.CHARACTER_SET, "UTF8");
 
-			BitMatrix bitMatrix = new MultiFormatWriter().encode(contents, BarcodeFormat.QR_CODE, width, height, hints);
+            BitMatrix bitMatrix = new MultiFormatWriter().encode(contents, BarcodeFormat.QR_CODE, width, height, hints);
 
             File imageFile = new File(imgPath);
-			writeToFile(bitMatrix, "png", imageFile);
+            writeToFile(bitMatrix, "png", imageFile);
 
             return imageFile;
 
-		} catch (Exception e) {
-			log.error("create QR code error!", e);
+        } catch (Exception e) {
+            log.error("create QR code error!", e);
             return null;
-		}
-	}
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        //二维码中保存的信息
+        String outTradeNo = String.valueOf(System.currentTimeMillis());
+        String content = "http://外网地址xx/trade/wap/pay?outTradeNo=" + outTradeNo;
+        //生成的二维码保存的路径
+        String path = "C:/Users/change/Desktop/";
+        MultiFormatWriter multiFormatWrite = new MultiFormatWriter();
+        Map<EncodeHintType, String> hints = new HashMap<>(1);
+        hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
+        // 按照指定的宽度，高度和附加参数对字符串进行编码
+        //生成二维码
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+        BitMatrix bitMatrix = multiFormatWrite.encode(content, BarcodeFormat.QR_CODE, 400, 400, hints);
+        File file1 = new File(path, sdf.format(new Date()) + ".jpg");
+        // 写入文件
+        writeToFile(bitMatrix, "jpg", file1);
+        System.out.println("二维码图片生成成功！");
+    }
 }

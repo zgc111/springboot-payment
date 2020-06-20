@@ -3,6 +3,7 @@ package com.suncd.epm.cm.controller;
 import com.alipay.api.response.AlipayDataBillSellQueryResponse;
 import com.alipay.api.response.AlipayTradePrecreateResponse;
 import com.alipay.api.response.AlipayTradeQueryResponse;
+import com.google.gson.Gson;
 import com.suncd.epm.cm.domain.EcOrderPayQrCode;
 import com.suncd.epm.cm.domain.TradeBillSellQuery;
 import com.suncd.epm.cm.service.AliPayOrderService;
@@ -13,6 +14,10 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.util.Map;
+
+import static java.lang.Math.random;
 
 /**
  * @author YangQ
@@ -163,19 +168,65 @@ public class AliPayOrderController {
      *
      * @param request
      */
-    @PostMapping("/trades/payment/ali-call-back")
-    @ResponseBody
-    public String paymentAliCallBack(HttpServletRequest request) {
-        log.debug("支付宝侧回调...");
+    @PostMapping("/trades/payment/notify-url")
+    public String paymentAliNotifyUrl(HttpServletRequest request) {
+        log.debug("支付宝异步侧回调开始...");
         //模拟回调异常
-        int a = (int) (Math.random() * 10);
+        int a = (int) (random() * 10);
         if (a / 2 == 0) {
+            aliPayOrderService.paymentAliCallBack(request);
             return "success";
         }
-        aliPayOrderService.paymentAliCallBack(request);
-        log.debug("支付宝侧回调...");
+        log.debug("支付宝侧异步回调结束...");
         return "failure";
     }
 
+    @PostMapping("/trades/payment/return-url")
+    public String paymentAliReturnUrl(HttpServletRequest request) {
+        log.debug("支付宝侧同步回调开始...");
+        //模拟回调异常
+        int a = (int) (random() * 10);
+        if (a / 2 == 0) {
+            Map<String, String[]> parmMap = request.getParameterMap();
+            log.debug("接受到同步回调信息:{},开始处理相关业务", parmMap);
+            return "success";
+        }
+        log.debug("支付宝侧同步回调结束...");
+        return "failure";
+    }
+
+    /**
+     * 手机支付api(通过生成的二维码唤醒支付宝支付)
+     * 1.需要调用ZxingUtils main方法生成我二维码
+     *
+     * @param httpServletRequest
+     * @param httpServletResponse
+     * @throws Exception
+     */
+    @RequestMapping("trade/wap/pay")
+    public void wapPay(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws Exception {
+        String userAgent = httpServletRequest.getHeader("User-Agent");
+        log.debug("User-Agent:{}", userAgent);
+        Map<String, String[]> parameterMap = httpServletRequest.getParameterMap();
+        log.debug("请求参数是:{}", new Gson().toJson(parameterMap));
+        String agent = userAgent.toLowerCase();
+        String from = "null";
+        if (agent.indexOf("micromessenger") > 0) {
+            log.debug("微信扫码支付");
+        } else if (agent.indexOf("alipayclient") > 0) {
+            //用户使用支付宝访问页面
+            log.debug("支付宝扫码支付");
+            String outTradeNo = parameterMap.get("outTradeNo")[0];
+            from = aliPayOrderService.aliWapPay(outTradeNo);
+        } else {
+            from = "<p style=\"text-align:center\">" +
+                "没用的界面" +
+                "</p>";
+        }
+        //直接将完整的表单html输出到页面
+        httpServletResponse.setContentType("text/html;charset=utf-8");
+        httpServletResponse.getWriter().write(from);
+        httpServletResponse.getWriter().flush();
+    }
 
 }

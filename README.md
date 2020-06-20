@@ -67,3 +67,19 @@ https://opendocs.alipay.com/apis/api_1/alipay.trade.query
     
      注:因为我是在沙箱环境测试的,我没有返回消息好像也不会触发支付宝异步通知,返回failure也不一定能收到或根据频率收到消息
                   
+4.手机支付,通过生成的二维码唤醒支付宝支付(主要目的是想做支付宝和微信二码合一,由于微信个人不能申请微信认证,所以微信...)
+
+    实现方式:
+    
+    a.将服务器的api映射到外网,调用api,生成一个包含api信息的二维码,提供给用户扫描二维码识别二维码信息中的api连接
+    
+    b.服务器根据请求头中的User-Agent来识别是支付宝(包含:AlipayClient)还是微信(包含:MicroMessenger)app来的请求,在进行
+    下步操作
+    
+    c.支付宝主要是通过调用api创建订单,然后通过HttpServletResponse返回页面来达到目的
+
+ 1):应用需要添加手机网站支付能力(https://b.alipay.com/signing/productDetailV2.htm?productId=I1011000290000001001)
+ 
+ 
+ 
+ 

@@ -118,7 +118,7 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
                 String filePath = String.format("C:/Users/change/Desktop/qr-%s.png",
                     System.currentTimeMillis());
                 log.info("filePath:" + filePath);
-                ZxingUtils.getQRCodeImge(response.getQrCode(), 256, filePath);
+                ZxingUtils.getQrCodeImage(response.getQrCode(), 256, filePath);
             } else {
                 log.error("不支持的交易状态，交易返回异常!!!");
                 throw new RuntimeException("不支持的交易状态，交易返回异常!!!");
@@ -161,7 +161,7 @@ public class AliPayOrderServiceImpl implements AliPayOrderService {
                 String filePath = String.format("C:/Users/change/Desktop/qr-%s.png",
                     response.getOutTradeNo());
                 log.info("filePath:" + filePath);
-                ZxingUtils.getQRCodeImge(response.getQrCode(), 256, filePath);
+                ZxingUtils.getQrCodeImage(response.getQrCode(), 256, filePath);
             } else {
                 log.error("不支持的交易状态，交易返回异常!!!");
                 throw new RuntimeException("不支持的交易状态，交易返回异常!!!");

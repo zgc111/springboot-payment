@@ -9,7 +9,6 @@ import com.suncd.epm.cm.domain.TradeBillSellQuery;
 import com.suncd.epm.cm.service.AliPayOrderService;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,8 +25,6 @@ import static java.lang.Math.random;
 @RestController
 @Log4j2
 public class AliPayOrderController {
-    @Value("${alipay_public_key}")
-    private String aliPayPublicKey;
     @Autowired
     private AliPayOrderService aliPayOrderService;
 
